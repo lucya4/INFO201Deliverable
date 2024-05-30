@@ -16,58 +16,58 @@ dataset <- dataset %>% mutate(MM_percent = Mjoint_MM / total_MM)
 dataset <- dataset %>% mutate(GEOID = as.factor(GEOID10))
 top50 <- dataset %>% top_n(50, Cns_TotHH) %>% arrange(TaxRate_SS)
 
-## Josh's code not sure what it's for
-top5 <- dataset %>% top_n(5, Cns_TotHH) %>% arrange(TaxRate_SS)
+top5 <- dataset %>% 
+  top_n(5, Cns_TotHH) %>% 
+  arrange(TaxRate_SS)
 zipCode <- top5 %>% pull(GEOID10)
 
 ## main server function with chart outputs
 function(input, output) {
   
-  ## Plot for Page 1 October's Code
   output$plot1 <- renderPlotly({
-    married_by_zipcode <- ggplot(top50, 
-      aes(
-        x = GEOID10, 
+    married_by_zipcode <- ggplot(top50)+
+      geom_col(mapping = aes(
+        x = as.factor(GEOID10),
         y = if(input$checkbox1) FF_percent else MM_percent,
-        color = "blue"
+        text = paste("Zipcode:", as.factor(GEOID10))
       )) +
-      geom_bar(stat = "identity") 
-    ggplotly(married_by_zipcode)
+      labs(
+        title = "Zipcode vs Ratio of Same-sex Couples",
+        x = "Zipcode",
+        y = if(input$checkbox1) "Ratio of Female Same-sex Couples" else "Ratio of Male Same-sex Couples"
+      )
+    
+    ggplotly(married_by_zipcode, tooltip = ("text"))
   })
   
- ## Josh Code
   output$plot2 <- renderPlotly({
-    chart2 <- ggplot(top5) +
+    chart2 <- ggplot(dataset) +
       geom_smooth(mapping = aes(
-        x = TOTINDEX, 
+        x = Bars_Weight, 
         y = if(input$checkbox2) Mjoint_SS else Cns_RateSS,
-        text = paste("# Bars:", CountBars),
-        color = "blue"
       )) +
       labs(
         title = "SS Couples in Relation to Index in Dense Cities",
-        x = "Gayborhood Index (weighted bars and events in area)",
+        x = "Gayborhood Index (weighted bars in area)",
         y = if (input$checkbox2) "Married SS Couples"
         else "Unmarried SS Couples"
       )
-    ggplotly(chart2, tooltip = ("text"))
   })
   
-  ## plot for Page 3 Octobers code inspired by Josh
   output$plot3 <- renderPlotly({
     chart3 <- ggplot(top5) +
-      geom_smooth(mapping = aes(
-        x = GEOID10, 
+      geom_col(mapping = aes(
+        x = as.factor(GEOID10), 
         y = if(input$checkbox3) Mjoint_FF else Mjoint_MM,
-        text = paste("Registered Married Couples:"),
-        color = "blue"
+        text = paste("Registered Married Couples:", if(input$checkbox1) Mjoint_FF else Mjoint_MM)
       )) +
       labs(
-        title = if (input$checkbox3) "Registered Married Couples in high Density Cities",
-        x = "GEO ID for the 5 most populated cities in the USA",
+        title = "Registered Married Couples in High Density Cities",
+        x = "Zipcodes for the 5 Most Populated Cities in the USA",
         y = if (input$checkbox3) "Married Same Sex Female Couples" 
         else "Married Same Sex Male Couples"
       )
-    ggplotly(chart3, tooltip = ("text"))
+    ggplotly(chart3, tooltip = "text") 
   })
+  
 }
